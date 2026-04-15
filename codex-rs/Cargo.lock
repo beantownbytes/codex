@@ -2505,6 +2505,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "codex-omlx"
+version = "0.0.0"
+dependencies = [
+ "codex-core",
+ "codex-model-provider-info",
+ "reqwest",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "wiremock",
+]
+
+[[package]]
 name = "codex-otel"
 version = "0.0.0"
 dependencies = [
@@ -3050,6 +3063,7 @@ dependencies = [
  "codex-lmstudio",
  "codex-model-provider-info",
  "codex-ollama",
+ "codex-omlx",
 ]
 
 [[package]]

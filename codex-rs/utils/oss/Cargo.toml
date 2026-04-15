@@ -12,3 +12,4 @@ codex-core = { workspace = true }
 codex-lmstudio = { workspace = true }
 codex-model-provider-info = { workspace = true }
 codex-ollama = { workspace = true }
+codex-omlx = { workspace = true }

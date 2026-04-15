@@ -4,8 +4,10 @@ use std::sync::LazyLock;
 use crate::legacy_core::config::set_default_oss_provider;
 use codex_model_provider_info::DEFAULT_LMSTUDIO_PORT;
 use codex_model_provider_info::DEFAULT_OLLAMA_PORT;
+use codex_model_provider_info::DEFAULT_OMLX_PORT;
 use codex_model_provider_info::LMSTUDIO_OSS_PROVIDER_ID;
 use codex_model_provider_info::OLLAMA_OSS_PROVIDER_ID;
+use codex_model_provider_info::OMLX_OSS_PROVIDER_ID;
 use crossterm::event::Event;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEvent;
@@ -74,6 +76,12 @@ static OSS_SELECT_OPTIONS: LazyLock<Vec<SelectOption>> = LazyLock::new(|| {
             key: KeyCode::Char('o'),
             provider_id: OLLAMA_OSS_PROVIDER_ID,
         },
+        SelectOption {
+            label: Line::from(vec!["o".underlined(), "MLX".into()]),
+            description: "Local oMLX server (default port 8000)",
+            key: KeyCode::Char('m'),
+            provider_id: OMLX_OSS_PROVIDER_ID,
+        },
     ]
 });
 
@@ -92,7 +100,11 @@ pub struct OssSelectionWidget<'a> {
 }
 
 impl OssSelectionWidget<'_> {
-    fn new(lmstudio_status: ProviderStatus, ollama_status: ProviderStatus) -> io::Result<Self> {
+    fn new(
+        lmstudio_status: ProviderStatus,
+        ollama_status: ProviderStatus,
+        omlx_status: ProviderStatus,
+    ) -> io::Result<Self> {
         let providers = vec![
             ProviderOption {
                 name: "LM Studio".to_string(),
@@ -105,6 +117,10 @@ impl OssSelectionWidget<'_> {
             ProviderOption {
                 name: "Ollama (Chat)".to_string(),
                 status: ollama_status,
+            },
+            ProviderOption {
+                name: "oMLX".to_string(),
+                status: omlx_status,
             },
         ];
 
@@ -288,26 +304,25 @@ fn get_status_symbol_and_color(status: &ProviderStatus) -> (&'static str, Color)
 }
 
 pub async fn select_oss_provider(codex_home: &std::path::Path) -> io::Result<String> {
-    // Check provider statuses first
     let lmstudio_status = check_lmstudio_status().await;
     let ollama_status = check_ollama_status().await;
+    let omlx_status = check_omlx_status().await;
 
-    // Autoselect if only one is running
-    match (&lmstudio_status, &ollama_status) {
-        (ProviderStatus::Running, ProviderStatus::NotRunning) => {
-            let provider = LMSTUDIO_OSS_PROVIDER_ID.to_string();
-            return Ok(provider);
-        }
-        (ProviderStatus::NotRunning, ProviderStatus::Running) => {
-            let provider = OLLAMA_OSS_PROVIDER_ID.to_string();
-            return Ok(provider);
-        }
-        _ => {
-            // Both running or both not running - show UI
-        }
+    let running: Vec<&str> = [
+        (LMSTUDIO_OSS_PROVIDER_ID, &lmstudio_status),
+        (OLLAMA_OSS_PROVIDER_ID, &ollama_status),
+        (OMLX_OSS_PROVIDER_ID, &omlx_status),
+    ]
+    .iter()
+    .filter(|(_, s)| matches!(s, ProviderStatus::Running))
+    .map(|(id, _)| *id)
+    .collect();
+
+    if running.len() == 1 {
+        return Ok(running[0].to_string());
     }
 
-    let mut widget = OssSelectionWidget::new(lmstudio_status, ollama_status)?;
+    let mut widget = OssSelectionWidget::new(lmstudio_status, ollama_status, omlx_status)?;
 
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -352,6 +367,14 @@ async fn check_lmstudio_status() -> ProviderStatus {
 
 async fn check_ollama_status() -> ProviderStatus {
     match check_port_status(DEFAULT_OLLAMA_PORT).await {
+        Ok(true) => ProviderStatus::Running,
+        Ok(false) => ProviderStatus::NotRunning,
+        Err(_) => ProviderStatus::Unknown,
+    }
+}
+
+async fn check_omlx_status() -> ProviderStatus {
+    match check_port_status(DEFAULT_OMLX_PORT).await {
         Ok(true) => ProviderStatus::Running,
         Ok(false) => ProviderStatus::NotRunning,
         Err(_) => ProviderStatus::Unknown,

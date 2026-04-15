@@ -307,9 +307,11 @@ impl ModelProviderInfo {
 
 pub const DEFAULT_LMSTUDIO_PORT: u16 = 1234;
 pub const DEFAULT_OLLAMA_PORT: u16 = 11434;
+pub const DEFAULT_OMLX_PORT: u16 = 8000;
 
 pub const LMSTUDIO_OSS_PROVIDER_ID: &str = "lmstudio";
 pub const OLLAMA_OSS_PROVIDER_ID: &str = "ollama";
+pub const OMLX_OSS_PROVIDER_ID: &str = "omlx";
 
 /// Built-in default provider list.
 pub fn built_in_model_providers(
@@ -331,6 +333,10 @@ pub fn built_in_model_providers(
         (
             LMSTUDIO_OSS_PROVIDER_ID,
             create_oss_provider(DEFAULT_LMSTUDIO_PORT, WireApi::Responses),
+        ),
+        (
+            OMLX_OSS_PROVIDER_ID,
+            create_oss_provider(DEFAULT_OMLX_PORT, WireApi::Responses),
         ),
     ]
     .into_iter()

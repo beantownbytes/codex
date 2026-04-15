@@ -35,6 +35,7 @@ use codex_model_provider_info::LMSTUDIO_OSS_PROVIDER_ID;
 use codex_model_provider_info::ModelProviderInfo;
 use codex_model_provider_info::OLLAMA_CHAT_PROVIDER_REMOVED_ERROR;
 use codex_model_provider_info::OLLAMA_OSS_PROVIDER_ID;
+use codex_model_provider_info::OMLX_OSS_PROVIDER_ID;
 use codex_model_provider_info::OPENAI_PROVIDER_ID;
 use codex_protocol::config_types::ForcedLoginMethod;
 use codex_protocol::config_types::Personality;
@@ -56,10 +57,11 @@ use serde::Deserialize;
 use serde::Deserializer;
 use serde::Serialize;
 
-const RESERVED_MODEL_PROVIDER_IDS: [&str; 3] = [
+const RESERVED_MODEL_PROVIDER_IDS: [&str; 4] = [
     OPENAI_PROVIDER_ID,
     OLLAMA_OSS_PROVIDER_ID,
     LMSTUDIO_OSS_PROVIDER_ID,
+    OMLX_OSS_PROVIDER_ID,
 ];
 
 /// Base config deserialized from ~/.codex/config.toml.
@@ -782,7 +784,7 @@ where
 
 pub fn validate_oss_provider(provider: &str) -> std::io::Result<()> {
     match provider {
-        LMSTUDIO_OSS_PROVIDER_ID | OLLAMA_OSS_PROVIDER_ID => Ok(()),
+        LMSTUDIO_OSS_PROVIDER_ID | OLLAMA_OSS_PROVIDER_ID | OMLX_OSS_PROVIDER_ID => Ok(()),
         LEGACY_OLLAMA_CHAT_PROVIDER_ID => Err(std::io::Error::new(
             std::io::ErrorKind::InvalidInput,
             OLLAMA_CHAT_PROVIDER_REMOVED_ERROR,
@@ -790,7 +792,7 @@ pub fn validate_oss_provider(provider: &str) -> std::io::Result<()> {
         _ => Err(std::io::Error::new(
             std::io::ErrorKind::InvalidInput,
             format!(
-                "Invalid OSS provider '{provider}'. Must be one of: {LMSTUDIO_OSS_PROVIDER_ID}, {OLLAMA_OSS_PROVIDER_ID}"
+                "Invalid OSS provider '{provider}'. Must be one of: {LMSTUDIO_OSS_PROVIDER_ID}, {OLLAMA_OSS_PROVIDER_ID}, {OMLX_OSS_PROVIDER_ID}"
             ),
         )),
     }

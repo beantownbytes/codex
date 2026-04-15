@@ -3,12 +3,26 @@
 use codex_core::config::Config;
 use codex_model_provider_info::LMSTUDIO_OSS_PROVIDER_ID;
 use codex_model_provider_info::OLLAMA_OSS_PROVIDER_ID;
+use codex_model_provider_info::OMLX_OSS_PROVIDER_ID;
 
 /// Returns the default model for a given OSS provider.
 pub fn get_default_model_for_oss_provider(provider_id: &str) -> Option<&'static str> {
     match provider_id {
         LMSTUDIO_OSS_PROVIDER_ID => Some(codex_lmstudio::DEFAULT_OSS_MODEL),
         OLLAMA_OSS_PROVIDER_ID => Some(codex_ollama::DEFAULT_OSS_MODEL),
+        OMLX_OSS_PROVIDER_ID => None,
+        _ => None,
+    }
+}
+
+/// For providers without a static default model, query the server to auto-select one.
+/// Uses provider defaults (port, base_url env vars) without requiring a loaded Config.
+pub async fn auto_select_oss_model(provider_id: &str) -> Option<String> {
+    match provider_id {
+        OMLX_OSS_PROVIDER_ID => codex_omlx::auto_select_model_from_defaults()
+            .await
+            .ok()
+            .flatten(),
         _ => None,
     }
 }
@@ -27,6 +41,11 @@ pub async fn ensure_oss_provider_ready(
         OLLAMA_OSS_PROVIDER_ID => {
             codex_ollama::ensure_responses_supported(&config.model_provider).await?;
             codex_ollama::ensure_oss_ready(config)
+                .await
+                .map_err(|e| std::io::Error::other(format!("OSS setup failed: {e}")))?;
+        }
+        OMLX_OSS_PROVIDER_ID => {
+            codex_omlx::ensure_oss_ready(config)
                 .await
                 .map_err(|e| std::io::Error::other(format!("OSS setup failed: {e}")))?;
         }
@@ -51,6 +70,12 @@ mod tests {
     fn test_get_default_model_for_provider_ollama() {
         let result = get_default_model_for_oss_provider(OLLAMA_OSS_PROVIDER_ID);
         assert_eq!(result, Some(codex_ollama::DEFAULT_OSS_MODEL));
+    }
+
+    #[test]
+    fn test_get_default_model_for_provider_omlx() {
+        let result = get_default_model_for_oss_provider(OMLX_OSS_PROVIDER_ID);
+        assert_eq!(result, None);
     }
 
     #[test]
