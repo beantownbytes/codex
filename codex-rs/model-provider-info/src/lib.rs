@@ -336,7 +336,7 @@ pub fn built_in_model_providers(
         ),
         (
             OMLX_OSS_PROVIDER_ID,
-            create_oss_provider(DEFAULT_OMLX_PORT, WireApi::Responses),
+            create_omlx_provider(),
         ),
     ]
     .into_iter()
@@ -382,6 +382,15 @@ pub fn create_oss_provider_with_base_url(base_url: &str, wire_api: WireApi) -> M
         requires_openai_auth: false,
         supports_websockets: false,
     }
+}
+
+fn create_omlx_provider() -> ModelProviderInfo {
+    let mut provider = create_oss_provider(DEFAULT_OMLX_PORT, WireApi::Responses);
+    provider.name = "oMLX".into();
+    provider.experimental_bearer_token = std::env::var("OMLX_API_KEY")
+        .ok()
+        .filter(|v| !v.trim().is_empty());
+    provider
 }
 
 #[cfg(test)]

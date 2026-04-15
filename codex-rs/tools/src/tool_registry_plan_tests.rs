@@ -94,6 +94,7 @@ fn test_full_toolset_specs_for_gpt5_codex_unified_exec_web_search() {
             search_context_size: None,
             search_content_types: None,
         },
+        create_web_fetch_tool(),
         create_view_image_tool(ViewImageToolOptions {
             can_request_original_image_detail: config.can_request_original_image_detail,
         }),
@@ -985,9 +986,14 @@ fn mcp_resource_tools_are_included_when_mcp_servers_are_present() {
         sandbox_policy: &SandboxPolicy::DangerFullAccess,
         windows_sandbox_level: WindowsSandboxLevel::Disabled,
     });
+    let mut mcp_tools = HashMap::new();
+    mcp_tools.insert(
+        "test_server__test_tool".to_string(),
+        mcp_tool("test_tool", "A test tool", serde_json::json!({})),
+    );
     let (tools, _) = build_specs(
         &tools_config,
-        Some(HashMap::new()),
+        Some(mcp_tools),
         /*deferred_mcp_tools*/ None,
         &[],
     );

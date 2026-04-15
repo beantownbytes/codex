@@ -81,6 +81,7 @@ pub(crate) fn build_specs_with_discoverable_tools(
     use crate::tools::handlers::ToolSuggestHandler;
     use crate::tools::handlers::UnifiedExecHandler;
     use crate::tools::handlers::ViewImageHandler;
+    use crate::tools::handlers::WebFetchHandler;
     use crate::tools::handlers::multi_agents::CloseAgentHandler;
     use crate::tools::handlers::multi_agents::ResumeAgentHandler;
     use crate::tools::handlers::multi_agents::SendInputHandler;
@@ -254,6 +255,9 @@ pub(crate) fn build_specs_with_discoverable_tools(
             }
             ToolHandlerKind::ViewImage => {
                 builder.register_handler(handler.name, view_image_handler.clone());
+            }
+            ToolHandlerKind::WebFetch => {
+                builder.register_handler(handler.name, Arc::new(WebFetchHandler));
             }
             ToolHandlerKind::WaitAgentV1 => {
                 builder.register_handler(handler.name, Arc::new(WaitAgentHandler));

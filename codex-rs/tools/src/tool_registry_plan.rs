@@ -52,6 +52,7 @@ use crate::create_view_image_tool;
 use crate::create_wait_agent_tool_v1;
 use crate::create_wait_agent_tool_v2;
 use crate::create_wait_tool;
+use crate::create_web_fetch_tool;
 use crate::create_web_search_tool;
 use crate::create_write_stdin_tool;
 use crate::dynamic_tool_to_responses_api_tool;
@@ -183,7 +184,7 @@ pub fn build_tool_registry_plan(
         plan.register_handler("shell_command", ToolHandlerKind::ShellCommand);
     }
 
-    if params.mcp_tools.is_some() {
+    if params.mcp_tools.is_some_and(|tools| !tools.is_empty()) {
         plan.push_spec(
             create_list_mcp_resources_tool(),
             /*supports_parallel_tool_calls*/ true,
@@ -344,6 +345,15 @@ pub fn build_tool_registry_plan(
             /*supports_parallel_tool_calls*/ false,
             config.code_mode_enabled,
         );
+    }
+
+    if config.has_environment {
+        plan.push_spec(
+            create_web_fetch_tool(),
+            /*supports_parallel_tool_calls*/ true,
+            config.code_mode_enabled,
+        );
+        plan.register_handler("web_fetch", ToolHandlerKind::WebFetch);
     }
 
     if config.image_gen_tool {

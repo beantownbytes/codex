@@ -807,18 +807,21 @@ pub async fn run_main(
     let model = if let Some(model) = &cli.model {
         Some(model.clone())
     } else if cli.oss {
-        // Use the provider from model_provider_override
-        let static_default = model_provider_override
-            .as_ref()
-            .and_then(|provider_id| get_default_model_for_oss_provider(provider_id))
-            .map(std::borrow::ToOwned::to_owned);
-
-        if static_default.is_some() {
-            static_default
-        } else if let Some(provider_id) = model_provider_override.as_ref() {
-            auto_select_oss_model(provider_id).await
+        if let Some(model) = config_toml.model.clone() {
+            Some(model)
         } else {
-            None
+            let static_default = model_provider_override
+                .as_ref()
+                .and_then(|provider_id| get_default_model_for_oss_provider(provider_id))
+                .map(std::borrow::ToOwned::to_owned);
+
+            if static_default.is_some() {
+                static_default
+            } else if let Some(provider_id) = model_provider_override.as_ref() {
+                auto_select_oss_model(provider_id).await
+            } else {
+                None
+            }
         }
     } else {
         None // No model specified, will use the default.

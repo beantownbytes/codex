@@ -5,10 +5,13 @@ use codex_model_provider_info::WireApi;
 use codex_model_provider_info::create_oss_provider;
 use std::io;
 
+pub const OMLX_API_KEY_ENV: &str = "OMLX_API_KEY";
+
 #[derive(Clone)]
 pub struct OmlxClient {
     client: reqwest::Client,
     base_url: String,
+    api_key: Option<String>,
 }
 
 const OMLX_CONNECTION_ERROR: &str =
@@ -51,17 +54,28 @@ impl OmlxClient {
             .build()
             .unwrap_or_else(|_| reqwest::Client::new());
 
+        let api_key = std::env::var(OMLX_API_KEY_ENV)
+            .ok()
+            .filter(|v| !v.trim().is_empty());
+
         let omlx_client = OmlxClient {
             client,
             base_url: base_url.to_string(),
+            api_key,
         };
         omlx_client.check_server().await?;
 
         Ok(omlx_client)
     }
 
+    fn health_url(&self) -> String {
+        let base = self.base_url.trim_end_matches('/');
+        let root = base.trim_end_matches("/v1");
+        format!("{root}/health")
+    }
+
     async fn check_server(&self) -> io::Result<()> {
-        let url = format!("{}/models", self.base_url.trim_end_matches('/'));
+        let url = self.health_url();
         let response = self.client.get(&url).send().await;
 
         if let Ok(resp) = response {
@@ -78,11 +92,17 @@ impl OmlxClient {
         }
     }
 
+    fn authenticated(&self, req: reqwest::RequestBuilder) -> reqwest::RequestBuilder {
+        match &self.api_key {
+            Some(key) => req.bearer_auth(key),
+            None => req,
+        }
+    }
+
     pub async fn fetch_models(&self) -> io::Result<Vec<String>> {
         let url = format!("{}/models", self.base_url.trim_end_matches('/'));
         let response = self
-            .client
-            .get(&url)
+            .authenticated(self.client.get(&url))
             .send()
             .await
             .map_err(|e| io::Error::other(format!("Request failed: {e}")))?;
@@ -118,6 +138,7 @@ impl OmlxClient {
         Self {
             client,
             base_url: host_root.into(),
+            api_key: None,
         }
     }
 }
@@ -217,7 +238,7 @@ mod tests {
 
         let server = wiremock::MockServer::start().await;
         wiremock::Mock::given(wiremock::matchers::method("GET"))
-            .and(wiremock::matchers::path("/models"))
+            .and(wiremock::matchers::path("/health"))
             .respond_with(wiremock::ResponseTemplate::new(200))
             .mount(&server)
             .await;
@@ -237,7 +258,7 @@ mod tests {
 
         let server = wiremock::MockServer::start().await;
         wiremock::Mock::given(wiremock::matchers::method("GET"))
-            .and(wiremock::matchers::path("/models"))
+            .and(wiremock::matchers::path("/health"))
             .respond_with(wiremock::ResponseTemplate::new(404))
             .mount(&server)
             .await;
